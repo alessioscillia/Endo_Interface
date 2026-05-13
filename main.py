@@ -559,7 +559,7 @@ def main():
             st.markdown("### **How to Vote**")
             st.markdown("""
             - Rate the image quality on a scale from **1 to 10** (1 = very low quality, 10 = very high quality).
-            - Use the **NC (Not Classifiable)** button if the image cannot be evaluated at all (e.g., completely obscured, unicolour).
+            - Use the **NC (Not Classified)** button if the image cannot be evaluated at all (e.g., completely obscured, unicolour).
             """)
             
             st.divider()
