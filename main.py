@@ -37,8 +37,8 @@ st.set_page_config(layout="wide", page_title="Medical Image Assessment")
 # --- USER CONFIGURATION ---
 DATA_DEVELOPMENT_FOLDER_ID = "1XHP5ZEq-RmJnXlQN8G_LdUHhv2dbVE62"
 USERS_PER_GROUP = 3 
-IMAGES_PER_BATCH = 6 
-TARGET_PER_DATASET = 6 
+IMAGES_PER_BATCH = 35
+TARGET_PER_DATASET = 5 
 
 # Filenames for Guideline Reference Images
 HIGH_QUALITY_FILENAME = "EndoCV2021_001164.jpg"
@@ -438,6 +438,7 @@ def visualizza_riepilogo():
             data_for_display.append(display_item)
 
         df_temp = pd.DataFrame(data_for_display)
+        
         st.dataframe(
             df_temp,
             width='stretch',
@@ -446,7 +447,7 @@ def visualizza_riepilogo():
             column_order=("anteprima", "score"), 
             column_config={
                 "anteprima": st.column_config.ImageColumn("Preview", width="medium"), 
-                "score": st.column_config.NumberColumn("Score", format="%d ⭐"),
+                "score": st.column_config.Column("Score"), 
             }
         )
         st.caption(f"Total images assessed: {len(df_temp)}")
@@ -536,7 +537,6 @@ def main():
         st.stop()
         
     # --- LOAD REFERENCE IMAGES FOR GUIDELINES ---
-    # Ora restituisce stringhe base64 per l'HTML
     guideline_imgs = load_guideline_images()
 
     # --- ASSESSMENT LOOP ---
@@ -555,18 +555,26 @@ def main():
         col1, col2 = st.columns([1, 2])
 
         with col1:
+            # --- SEZIONE HOW TO VOTE ---
+            st.markdown("### **How to Vote**")
+            st.markdown("""
+            - Rate the image quality on a scale from **1 to 10** (1 = very low quality, 10 = very high quality).
+            - Use the **NC (Not Classifiable)** button if the image cannot be evaluated at all (e.g., completely obscured, unicolour).
+            """)
+            
+            st.divider()
+            
+            # --- SEZIONE CRITERI ---
             st.markdown("### **Criteria for Adequate Endoscopic Image Quality**")
             st.markdown(LINEE_GUIDA)
             
-            # --- DISPLAY REFERENCE IMAGES (HTML/CSS Flexbox for Mobile Side-by-Side) ---
+            # --- DISPLAY REFERENCE IMAGES ---
             st.divider()
             st.markdown("#### Reference Examples")
             
-            # Preleviamo le immagini base64 (o placeholder se mancano)
             high_b64 = guideline_imgs.get("high", "")
             low_b64 = guideline_imgs.get("low", "")
             
-            # Costruiamo l'HTML con CSS Flexbox per forzare il side-by-side anche su mobile
             html_content = f"""
             <div style="display: flex; flex-direction: row; gap: 10px; justify-content: center; width: 100%;">
                 <div style="flex: 1; text-align: center;">
@@ -584,13 +592,13 @@ def main():
         with col2:
             st.markdown("### Image to Evaluate")
             if image:
-                st.image(image, width='stretch') # Aggiornato per nuove versioni
+                st.image(image, width='stretch') 
             
             st.markdown(f"<b>Dataset:</b> {folder_name}", unsafe_allow_html=True)
             
             score = st.slider("Quality Score (1-10)", 1, 10, 5, key=f"score_{indice}")
             
-            c_back, c_save, c_summ = st.columns([1, 1.5, 1])
+            c_back, c_save, c_nc, c_summ = st.columns([1, 1.2, 1.2, 1])
             
             with c_back:
                 if st.button("⬅️ Back", width='stretch'):
@@ -615,11 +623,25 @@ def main():
                     st.session_state.indice += 1
                     st.rerun()
 
+            with c_nc:
+                if st.button("NC (Not Classif.)", width='stretch'):
+                    st.session_state.valutazioni.append({
+                        "id_utente": user_id,
+                        "esperienza": esperienza,
+                        "nome_immagine": img_file['title'],
+                        "file_id": img_file['id'], 
+                        "score": "NC", 
+                        "dataset": folder_name,
+                        "batch_txt": st.session_state.current_txt_file,
+                        "timestamp": _now_rome_str()
+                    })
+                    st.session_state.indice += 1
+                    st.rerun()
+
             with c_summ:
                 if st.button("📋 Summary", width='stretch'):
                     visualizza_riepilogo()
 
-            # --- MODIFICA 1: Spostato contatore QUI ---
             st.markdown(f"<div style='text-align: center; margin-top: 10px; color: grey;'>Image {indice + 1} of {len(imgs)}</div>", unsafe_allow_html=True)
         
         if indice + 1 < len(imgs):
@@ -643,7 +665,6 @@ def main():
             if st.button("💾 SAVE AND SUBMIT RESULTS", type="primary", width='stretch'):
                 with st.spinner("Saving Results..."):
                     
-                    # 1. Prepariamo i dati
                     dati_da_salvare = []
                     for val in st.session_state.valutazioni:
                         entry = val.copy()
@@ -652,7 +673,6 @@ def main():
                         entry.pop('anteprima', None)
                         dati_da_salvare.append(entry)
 
-                    # 2. Usiamo la funzione di salvataggio sicuro
                     success = safe_append_data(dati_da_salvare, worksheet_name="Results")
 
                     if success:
