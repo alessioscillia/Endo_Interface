@@ -592,6 +592,18 @@ def main():
         with col2:
             st.markdown("### Image to Evaluate")
             if image:
+                st.markdown(
+                    """
+                    <style>
+                    [data-testid="stImage"] {
+                        display: flex;
+                        justify-content: center;
+                    }
+                    </style>
+                    """, 
+                    unsafe_allow_html=True
+                )
+                
                 st.image(image) 
             
             st.markdown(f"<b>Dataset:</b> {folder_name}", unsafe_allow_html=True)
