@@ -592,7 +592,7 @@ def main():
         with col2:
             st.markdown("### Image to Evaluate")
             if image:
-                st.image(image, width='stretch') 
+                st.image(image) 
             
             st.markdown(f"<b>Dataset:</b> {folder_name}", unsafe_allow_html=True)
             
