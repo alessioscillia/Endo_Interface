@@ -1,4 +1,4 @@
-# Interfaccia Medico
+# Endo Interface
 
 App Streamlit per la valutazione della qualita' di immagini colonscopiche.
 
